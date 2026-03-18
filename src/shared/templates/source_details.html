@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ source.display_name }} — Notification System{% endblock %}
+{% block nav_dashboard %}nav__link--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <a href="/" class="back-link">← Sources</a>
+  <h1>{{ source.display_name }}</h1>
+</div>
+
+{# ── Status strip ─────────────────────────────────────────── #}
+<div class="section">
+  <div class="detail-strip">
+    <div>
+      {% if source.is_active %}
+      <span class="badge badge--running">Active</span>
+      {% else %}
+      <span class="badge badge--stopped">Inactive</span>
+      {% endif %}
+    </div>
+    <div class="detail-strip__item">
+      <span class="detail-strip__label">Started</span>
+      <span class="detail-strip__value">
+        {{ source.started_at.strftime("%Y-%m-%d %H:%M") if source.started_at else "—" }}
+      </span>
+    </div>
+    {% if source.stopped_at %}
+    <div class="detail-strip__item">
+      <span class="detail-strip__label">Stopped</span>
+      <span class="detail-strip__value">{{ source.stopped_at.strftime("%Y-%m-%d %H:%M") }}</span>
+    </div>
+    {% endif %}
+    <div class="detail-strip__item">
+      <span class="detail-strip__label">Uptime</span>
+      <span class="detail-strip__value">
+        {% if source.uptime_seconds is not none %}
+          {% set h = (source.uptime_seconds // 3600) %}
+          {% set m = (source.uptime_seconds % 3600) // 60 %}
+          {{ h }}h {{ m }}m
+        {% else %}N/A{% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+{# ── Metrics ──────────────────────────────────────────────── #}
+<div class="section">
+  <div class="section-title">Metrics</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card__label">Total Events</div>
+      <div class="stat-card__value">{{ source.total_events }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Info</div>
+      <div class="stat-card__value">{{ source.info_count }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Warnings</div>
+      <div class="stat-card__value {% if source.warning_count > 0 %}text-negative{% endif %}">
+        {{ source.warning_count }}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Errors</div>
+      <div class="stat-card__value {% if source.error_count > 0 %}text-negative{% endif %}">
+        {{ source.error_count }}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Critical</div>
+      <div class="stat-card__value {% if source.critical_count > 0 %}text-negative{% endif %}">
+        {{ source.critical_count }}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Error Rate</div>
+      <div class="stat-card__value {% if source.error_rate > 10 %}text-negative{% endif %}">
+        {{ "%.1f" | format(source.error_rate) }}%
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Event History ─────────────────────────────────────────── #}
+{% if source.recent_events %}
+<div class="section">
+  <div class="section-title">Recent Events (last {{ source.recent_events | length }})</div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Severity</th>
+          <th>Title</th>
+          <th>Detail</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in source.recent_events %}
+        <tr>
+          <td>
+            <span class="badge badge--{{ ev.severity.value }}">{{ ev.severity.value | upper }}</span>
+          </td>
+          <td>{{ ev.title }}</td>
+          <td class="text-muted" style="font-size:0.8rem;max-width:300px;word-break:break-word">
+            {{ ev.detail or "—" }}
+          </td>
+          <td class="text-muted" style="white-space:nowrap">
+            {{ ev.timestamp.strftime("%d.%m %H:%M:%S") }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ── Settings ─────────────────────────────────────────────── #}
+<div class="section">
+  <div class="section-title">Settings</div>
+  <div class="admin-section">
+    <form method="post" action="/sources/{{ source.id }}/settings">
+      <div class="form-row" style="flex-wrap:wrap;gap:var(--spacing-md)">
+        <div class="form-group">
+          <label class="form-label" for="custom_name">Custom Name</label>
+          <input class="input" type="text" id="custom_name" name="custom_name"
+                 value="{{ source.custom_name or '' }}" placeholder="{{ source.id }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="active_window_start">Active Window Start</label>
+          <input class="input" type="time" id="active_window_start" name="active_window_start"
+                 value="{{ source.active_window_start or '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="active_window_end">Active Window End</label>
+          <input class="input" type="time" id="active_window_end" name="active_window_end"
+                 value="{{ source.active_window_end or '' }}">
+        </div>
+      </div>
+      <div class="form-group mt-sm">
+        <label class="toggle-label">
+          <input type="checkbox" name="notify_events" value="1"
+                 {% if source.notify_events %}checked{% endif %}>
+          <span>Send Telegram notifications for events</span>
+        </label>
+      </div>
+      <button type="submit" class="btn btn--primary mt-sm">Save Settings</button>
+    </form>
+  </div>
+</div>
+
+{# ── Management ───────────────────────────────────────────── #}
+<div class="section">
+  <div class="section-title">Management</div>
+  <div class="admin-section" style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
+    <form method="post" action="/sources/{{ source.id }}/clear"
+          onsubmit="return confirm('Clear all event history for this source?')">
+      <button type="submit" class="btn btn--ghost">Clear History</button>
+    </form>
+    <form method="post" action="/sources/{{ source.id }}/remove"
+          onsubmit="return confirm('Remove this source entirely?')">
+      <button type="submit" class="btn btn--accent">Remove Source</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    container_name: notification_system
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - app_data:/app/storage
+    env_file:
+      - .env
+    environment:
+      - CORE_DB_URL=sqlite+aiosqlite:////app/storage/app.sqlite
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  app_data:

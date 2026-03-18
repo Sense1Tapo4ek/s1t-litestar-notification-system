@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Telegram — Notification System{% endblock %}
+{% block nav_admin %}nav__link--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Telegram</h1>
+  <p>Bot configuration and notification subscribers.</p>
+</div>
+
+{# ── Bot Status ───────────────────────────────────────────── #}
+<div class="admin-section">
+  <div class="admin-section__title">Bot Setup</div>
+
+  <div style="display:flex;align-items:center;gap:var(--spacing-md);margin-bottom:var(--spacing-md)">
+    {% if is_configured %}
+      <span class="badge badge--running">Configured</span>
+      <span class="text-muted" style="font-size:0.8125rem">Polling active. Token hidden for security.</span>
+    {% else %}
+      <span class="badge badge--stopped">Not Configured</span>
+      <span class="text-muted" style="font-size:0.8125rem">Set a token to start receiving commands.</span>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
+    <button type="button" class="btn btn--primary btn--sm"
+            onclick="document.getElementById('token-modal').showModal()">
+      {{ "Change Token" if is_configured else "Set Token" }}
+    </button>
+    {% if is_configured %}
+    <form method="post" action="/admin/test" style="display:inline">
+      <button type="submit" class="btn btn--secondary btn--sm">Send Test</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Token Modal ──────────────────────────────────────────── #}
+<dialog id="token-modal" class="modal">
+  <div class="modal__content">
+    <div class="modal__header">
+      <span class="modal__title">Telegram Bot Token</span>
+      <button type="button" class="modal__close" onclick="this.closest('dialog').close()">×</button>
+    </div>
+    <form method="post" action="/admin/token">
+      <div class="form-group" style="margin-bottom:var(--spacing-md)">
+        <label class="form-label" for="token">Token</label>
+        <span class="form-hint" style="margin-bottom:6px;display:block">
+          Get from <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a>.
+        </span>
+        <input class="input" type="text" id="token" name="token"
+               placeholder="1234567890:AAF..." autocomplete="off" required>
+      </div>
+      <div style="display:flex;gap:var(--spacing-sm);justify-content:flex-end">
+        <button type="button" class="btn btn--secondary btn--sm" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="submit" class="btn btn--primary btn--sm">Save</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+{# ── Subscribers ──────────────────────────────────────────── #}
+<div class="admin-section">
+  <div class="admin-section__title">Subscribers — {{ subscribers | length }}</div>
+
+  {% if subscribers %}
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Chat ID</th>
+          <th>Status</th>
+          <th>Events</th>
+          <th>Timeouts</th>
+          <th>Services</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in subscribers %}
+        <tr>
+          <td style="font-weight:500">
+            {% if sub.username %}@{{ sub.username }}{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="text-mono text-muted">{{ sub.chat_id }}</td>
+          <td>
+            {% if sub.is_active %}
+              <span class="badge badge--running">Active</span>
+            {% else %}
+              <span class="badge badge--stopped">Inactive</span>
+            {% endif %}
+          </td>
+
+          {# Events toggle #}
+          <td style="text-align:center">
+            <form method="post" action="/admin/{{ sub.chat_id }}/preferences" style="margin:0">
+              <input type="hidden" name="field" value="notify_events">
+              <input type="hidden" name="value" value="{{ '0' if sub.notify_events else '1' }}">
+              <button type="submit" class="btn btn--sm {{ 'btn--accent' if sub.notify_events else 'btn--ghost' }}"
+                      style="padding:0.15rem 0.5rem;font-size:0.75rem">
+                {{ '✓' if sub.notify_events else '✗' }}
+              </button>
+            </form>
+          </td>
+
+          {# Timeouts toggle #}
+          <td style="text-align:center">
+            <form method="post" action="/admin/{{ sub.chat_id }}/preferences" style="margin:0">
+              <input type="hidden" name="field" value="notify_timeouts">
+              <input type="hidden" name="value" value="{{ '0' if sub.notify_timeouts else '1' }}">
+              <button type="submit" class="btn btn--sm {{ 'btn--accent' if sub.notify_timeouts else 'btn--ghost' }}"
+                      style="padding:0.15rem 0.5rem;font-size:0.75rem">
+                {{ '✓' if sub.notify_timeouts else '✗' }}
+              </button>
+            </form>
+          </td>
+
+          {# Services toggle #}
+          <td style="text-align:center">
+            <form method="post" action="/admin/{{ sub.chat_id }}/preferences" style="margin:0">
+              <input type="hidden" name="field" value="notify_services">
+              <input type="hidden" name="value" value="{{ '0' if sub.notify_services else '1' }}">
+              <button type="submit" class="btn btn--sm {{ 'btn--accent' if sub.notify_services else 'btn--ghost' }}"
+                      style="padding:0.15rem 0.5rem;font-size:0.75rem">
+                {{ '✓' if sub.notify_services else '✗' }}
+              </button>
+            </form>
+          </td>
+
+          <td>
+            <form method="post" action="/admin/{{ sub.chat_id }}/toggle">
+              <button type="submit" class="btn btn--sm {{ 'btn--secondary' if sub.is_active else 'btn--primary' }}">
+                {{ "Deactivate" if sub.is_active else "Activate" }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:var(--spacing-xl)">
+    <span class="empty-state__icon" style="font-size:1.5rem">◻</span>
+    <div class="empty-state__text" style="font-size:1rem">No subscribers</div>
+    <p class="mt-sm">Users appear here after sending <code>/start</code> to the bot.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

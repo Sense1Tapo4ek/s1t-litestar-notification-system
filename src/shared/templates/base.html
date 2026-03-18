@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Notification System{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/css/japandi.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="container">
+      <div class="header__inner">
+        <a href="/" class="header__brand">Notify<span>System</span></a>
+
+        <nav class="nav">
+          <a href="/"      class="nav__link {% block nav_dashboard %}{% endblock %}">Sources</a>
+          <a href="/admin" class="nav__link {% block nav_admin %}{% endblock %}">Telegram</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container">
+      {% if flash_msg %}
+      <div class="flash flash--success">{{ flash_msg }}</div>
+      {% endif %}
+      {% if flash_error %}
+      <div class="flash flash--error">{{ flash_error }}</div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

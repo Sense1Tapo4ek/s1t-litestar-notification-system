@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Sources — Notification System{% endblock %}
+{% block nav_dashboard %}nav__link--active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Event Sources</h1>
+  <p>Monitored sources. The MockDetector emits live events automatically.</p>
+</div>
+
+{# ── Global Active Window ─────────────────────────────────── #}
+<div class="section">
+  <div class="section-title">Global Active Window</div>
+  <div class="admin-section">
+    <span class="form-hint" style="margin-bottom:8px;display:block">
+      Timeout alerts only fire if the source last spoke within this window.
+      Leave blank to disable window-based filtering.
+    </span>
+    <form method="post" action="/settings" style="display:flex;gap:var(--spacing-sm);align-items:end;flex-wrap:wrap">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="active_window_start">Start</label>
+        <input
+          class="input" type="time" id="active_window_start" name="active_window_start"
+          value="{{ global_settings.active_window_start or '' }}">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="active_window_end">End</label>
+        <input
+          class="input" type="time" id="active_window_end" name="active_window_end"
+          value="{{ global_settings.active_window_end or '' }}">
+      </div>
+      <button type="submit" class="btn btn--primary">Save</button>
+    </form>
+  </div>
+</div>
+
+{% set active_sources = sources | selectattr("is_active") | list %}
+{% set inactive_sources = sources | rejectattr("is_active") | list %}
+
+{% if active_sources %}
+<div class="section">
+  <div class="section-title">Active — {{ active_sources | length }}</div>
+  <div class="bots-grid">
+    {% for src in active_sources %}
+    <a href="/sources/{{ src.id }}" class="bot-card bot-card--running">
+      <div class="flex-center gap-sm mb-sm">
+        <span class="badge badge--running">Active</span>
+        {% if not src.notify_events %}
+        <span class="badge" style="font-size:0.65rem;opacity:0.7">Muted</span>
+        {% endif %}
+      </div>
+      <div class="bot-card__name">{{ src.display_name }}</div>
+      {% if src.started_at %}
+      <div class="text-muted">Since: {{ src.started_at.strftime("%d.%m %H:%M") }}</div>
+      {% endif %}
+      <div class="bot-card__stats">
+        <div class="bot-card__stat">
+          <span class="bot-card__stat-label">Events</span>
+          <span class="bot-card__stat-value">{{ src.total_events }}</span>
+        </div>
+        <div class="bot-card__stat">
+          <span class="bot-card__stat-label">Errors</span>
+          <span class="bot-card__stat-value {% if src.error_count > 0 %}text-negative{% endif %}">
+            {{ src.error_count }}
+          </span>
+        </div>
+      </div>
+      {% if src.last_seen_ts %}
+      <div class="text-muted mt-sm" style="font-size:0.75rem">
+        Last seen: {{ src.last_seen_ts.strftime("%d.%m %H:%M:%S") }}
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if inactive_sources %}
+{% if active_sources %}<hr class="divider">{% endif %}
+<div class="section">
+  <div class="section-title">Inactive — {{ inactive_sources | length }}</div>
+  <div class="bots-grid">
+    {% for src in inactive_sources %}
+    <a href="/sources/{{ src.id }}" class="bot-card bot-card--stopped">
+      <div class="flex-center gap-sm mb-sm">
+        <span class="badge badge--stopped">Inactive</span>
+      </div>
+      <div class="bot-card__name">{{ src.display_name }}</div>
+      <div class="bot-card__stats">
+        <div class="bot-card__stat">
+          <span class="bot-card__stat-label">Events</span>
+          <span class="bot-card__stat-value">{{ src.total_events }}</span>
+        </div>
+        <div class="bot-card__stat">
+          <span class="bot-card__stat-label">Errors</span>
+          <span class="bot-card__stat-value {% if src.error_count > 0 %}text-negative{% endif %}">
+            {{ src.error_count }}
+          </span>
+        </div>
+      </div>
+      {% if src.last_seen_ts %}
+      <div class="text-muted mt-sm" style="font-size:0.75rem">
+        Last seen: {{ src.last_seen_ts.strftime("%d.%m %H:%M:%S") }}
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not sources %}
+<div class="empty-state">
+  <span class="empty-state__icon">◻</span>
+  <div class="empty-state__text">No sources registered yet</div>
+  <p class="mt-md">The MockDetector will populate this page within 5–15 seconds of startup.</p>
+</div>
+{% endif %}
+{% endblock %}
