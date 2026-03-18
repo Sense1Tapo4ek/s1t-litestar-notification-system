@@ -11,7 +11,7 @@ Replace this with your own NotificationDetector subclass in worker.py.
 import asyncio
 import logging
 import random
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import uuid4
 
 from core.domain import EventSeverity
@@ -43,11 +43,10 @@ class MockDetector(NotificationDetector):
 
     def __init__(self) -> None:
         self._stop_event = asyncio.Event()
-        self._down_source: str | None = None
+        self._event_count = 0
 
     async def run(self, on_event: OnEventCallback) -> None:
         logger.info("MockDetector started -- will emit events every 5-15 s for %d sources", len(_SOURCES))
-        tick = 0
         while not self._stop_event.is_set():
             await asyncio.sleep(random.uniform(5, 15))
             if self._stop_event.is_set():
@@ -56,18 +55,18 @@ class MockDetector(NotificationDetector):
             source_id, source_name = random.choice(_SOURCES)
             severity, title, detail = random.choice(_EVENTS)
 
-            ts = datetime.now(timezone.utc)
+            ts = datetime.now()  # naive UTC -- consistent with repo_mappers._naive_utc
             await on_event(source_id, str(uuid4()), severity, title, detail, ts)
 
-            tick += 1
-            if tick % 8 == 0:
+            self._event_count += 1
+            if self._event_count % 8 == 0:
                 await self._simulate_down_up(on_event)
 
         logger.info("MockDetector stopped")
 
     async def _simulate_down_up(self, on_event: OnEventCallback) -> None:
         source_id, source_name = random.choice(_SOURCES)
-        ts = datetime.now(timezone.utc)
+        ts = datetime.now()  # naive UTC
         await on_event(
             source_id, str(uuid4()), EventSeverity.CRITICAL,
             f"{source_name} appears unresponsive",

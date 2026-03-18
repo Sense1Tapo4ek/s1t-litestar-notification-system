@@ -27,8 +27,7 @@ git clone https://github.com/your-org/s1t-litestar-notification-system.git
 cd s1t-litestar-notification-system
 
 # 2. Create venv and install
-uv venv && source .venv/bin/activate
-uv pip install -e .
+uv sync
 
 # 3. Create storage directory
 mkdir -p storage

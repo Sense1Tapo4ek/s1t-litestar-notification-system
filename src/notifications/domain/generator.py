@@ -5,7 +5,7 @@ between app use cases and the alerts_facade port.
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from core.domain import EventSeverity
+from shared.generics import EventSeverity
 
 
 class NotificationGenerator(ABC):

@@ -1,7 +1,9 @@
-from typing import Any
+from typing import Annotated, Any
 from litestar import get, post
 from litestar.connection import Request
 from litestar.controller import Controller
+from litestar.enums import RequestEncodingType
+from litestar.params import Body
 from litestar.response import Template, Redirect
 from dishka.integrations.litestar import FromDishka, inject
 
@@ -39,7 +41,9 @@ class AdminController(Controller):
     @post("/token", name="update_token")
     @inject
     async def update_token(
-        self, facade: FromDishka[AdminUIFacade], data: dict[str, Any]
+        self,
+        facade: FromDishka[AdminUIFacade],
+        data: Annotated[dict[str, Any], Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
         token = (data.get("token") or "").strip()
         if not token:
@@ -69,7 +73,7 @@ class AdminController(Controller):
         self,
         chat_id: int,
         facade: FromDishka[AdminUIFacade],
-        data: dict[str, Any],
+        data: Annotated[dict[str, Any], Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
         field = data.get("field", "")
         value = data.get("value") == "1"

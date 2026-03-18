@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone, time
+from datetime import datetime, time
 from typing import Optional
 
 from ...domain import EventLogAgg, TimeWindowVO
 from ..interfaces.i_event_log_repo import IEventLogRepo
+from ..interfaces.i_notification_gateway import INotificationGateway
 from ..errors import SourceNotFoundError
 
 
@@ -20,7 +21,7 @@ class AddSourceUseCase:
             id=source_id,
             custom_name=display_name,
             is_active=True,
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(),
         )
         await self._repo.save(agg)
 
@@ -86,7 +87,6 @@ class MarkSourceActiveUseCase:
     _notifier: "INotificationGateway"
 
     async def __call__(self, source_id: str, started_at: datetime) -> None:
-        from ..interfaces.i_notification_gateway import INotificationGateway
         agg = await self._repo.get_by_id(source_id)
         if not agg:
             agg = EventLogAgg(id=source_id, is_active=False)

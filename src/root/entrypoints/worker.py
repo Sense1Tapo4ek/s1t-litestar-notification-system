@@ -10,7 +10,7 @@ import asyncio
 import logging
 from dishka import AsyncContainer
 
-from core.app import CheckTimeoutsUseCase, AddSourceUseCase, ProcessEventUseCase
+from core.app import CheckTimeoutsUseCase
 from core.ports.driving.detector.mock_detector import MockDetector
 from core.ports.driving.detector.detector_manager import DetectorManager
 from root.entrypoints.telegram import telegram_supervisor
@@ -34,15 +34,10 @@ async def worker_loop(container: AsyncContainer) -> None:
     global _telegram_task
     logger.info("Worker started")
 
-    async with container() as rc:
-        add_source_uc: AddSourceUseCase = await rc.get(AddSourceUseCase)
-        process_event_uc: ProcessEventUseCase = await rc.get(ProcessEventUseCase)
-
     detector = MockDetector()
     manager = DetectorManager(
         detector=detector,
-        process_event_uc=process_event_uc,
-        add_source_uc=add_source_uc,
+        container=container,
     )
     manager.start()
 
@@ -50,11 +45,9 @@ async def worker_loop(container: AsyncContainer) -> None:
         telegram_supervisor(container), name="telegram-supervisor"
     )
 
-    tick = 0
     try:
         while True:
             await asyncio.sleep(WORKER_INTERVAL_SECONDS)
-            tick += 1
             await _check_timeouts(container)
     except asyncio.CancelledError:
         logger.info("Worker loop cancelled, shutting down")

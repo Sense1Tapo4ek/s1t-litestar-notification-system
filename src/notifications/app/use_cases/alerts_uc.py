@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import logging
 
-from core.domain import EventSeverity
+from shared.generics import EventSeverity
 from notifications.app.interfaces.i_subscriber_repo import ISubscriberRepo
 from notifications.app.interfaces.i_telegram_gateway import ITelegramGateway
 from notifications.domain import TelegramSubscriberEnt, NotificationGenerator
@@ -15,10 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 async def _broadcast(
-    gateway: ITelegramGateway,
+    gateway: ITelegramGateway | None,
     subscribers: list[TelegramSubscriberEnt],
     text: str,
 ) -> None:
+    if gateway is None:
+        logger.debug("Telegram gateway not configured -- skipping broadcast")
+        return
     for sub in subscribers:
         try:
             ok = await gateway.send_message(sub.chat_id, text)
@@ -59,14 +62,6 @@ class SendSourceDownCommand:
 
 
 # ── Use Cases ───────────────────────────────────────────────────────────────
-
-_SEVERITY_EMOJI = {
-    EventSeverity.INFO: "ℹ️",
-    EventSeverity.WARNING: "⚠️",
-    EventSeverity.ERROR: "🔴",
-    EventSeverity.CRITICAL: "🚨",
-}
-
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SendEventAlertUseCase:

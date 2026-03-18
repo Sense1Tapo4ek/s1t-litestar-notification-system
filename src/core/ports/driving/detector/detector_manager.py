@@ -10,6 +10,8 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
+from dishka import AsyncContainer
+
 from core.app import (
     ProcessEventUseCase, ProcessEventCommand,
     AddSourceUseCase,
@@ -24,12 +26,10 @@ class DetectorManager:
     def __init__(
         self,
         detector: NotificationDetector,
-        process_event_uc: ProcessEventUseCase,
-        add_source_uc: AddSourceUseCase,
+        container: AsyncContainer,
     ) -> None:
         self._detector = detector
-        self._process_event_uc = process_event_uc
-        self._add_source_uc = add_source_uc
+        self._container = container
         self._task: asyncio.Task | None = None
 
     # ------------------------------------------------------------------
@@ -78,15 +78,18 @@ class DetectorManager:
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
         try:
-            await self._add_source_uc(source_id)
-            cmd = ProcessEventCommand(
-                source_id=source_id,
-                event_id=event_id,
-                severity=severity,
-                title=title,
-                timestamp=timestamp,
-                detail=detail,
-            )
-            await self._process_event_uc(cmd)
+            async with self._container() as rc:
+                add_source_uc: AddSourceUseCase = await rc.get(AddSourceUseCase)
+                process_event_uc: ProcessEventUseCase = await rc.get(ProcessEventUseCase)
+                await add_source_uc(source_id)
+                cmd = ProcessEventCommand(
+                    source_id=source_id,
+                    event_id=event_id,
+                    severity=severity,
+                    title=title,
+                    timestamp=timestamp,
+                    detail=detail,
+                )
+                await process_event_uc(cmd)
         except Exception:
             logger.exception("DetectorManager: failed to process event from source %s", source_id)

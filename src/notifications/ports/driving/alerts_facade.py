@@ -7,7 +7,7 @@ NotificationGenerator ABC lives in notifications/domain/generator.py to avoid ci
 from dataclasses import dataclass
 from datetime import datetime
 
-from core.domain import EventSeverity
+from shared.generics import EventSeverity
 from notifications.domain.generator import NotificationGenerator
 from notifications.app import (
     SendEventAlertUseCase, SendEventAlertCommand,

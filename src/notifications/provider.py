@@ -15,6 +15,7 @@ from notifications.app import (
 )
 from notifications.ports.driven.repos.sqlite_config_repo import SqliteConfigRepo
 from notifications.ports.driven.repos.sqlite_subscriber_repo import SqliteSubscriberRepo
+from notifications.adapters.driven.gateways.aiogram_gateway import TelegramGatewayRef
 from notifications.domain.generator import NotificationGenerator
 from notifications.ports.driving.alerts_facade import AlertsFacade, DefaultGenerator
 from notifications.ports.driving.api.admin_ui_facade import AdminUIFacade
@@ -41,14 +42,12 @@ class NotificationsProvider(Provider):
         return DefaultGenerator()
 
     @provide(scope=Scope.APP)
-    def provide_telegram_gateway(self) -> Optional[ITelegramGateway]:
-        """
-        Returns None when no token is configured.
-        Alert UCs should handle None gracefully.
-        Will be replaced by a real AiogramGateway at runtime in telegram.py
-        once a token is discovered.
-        """
-        return None
+    def provide_telegram_gateway_ref(self) -> TelegramGatewayRef:
+        return TelegramGatewayRef()
+
+    @provide(scope=Scope.REQUEST)
+    def provide_telegram_gateway(self, ref: TelegramGatewayRef) -> Optional[ITelegramGateway]:
+        return ref.get()
 
     # ── Alert use cases ─────────────────────────────────────────────────
     @provide

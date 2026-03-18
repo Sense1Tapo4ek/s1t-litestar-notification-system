@@ -15,10 +15,9 @@ from aiogram.types import BotCommand
 from dishka import AsyncContainer
 
 from core.adapters.driving.telegram import handlers as core_handlers
-from notifications.adapters.driven.gateways.aiogram_gateway import AiogramGateway
+from notifications.adapters.driven.gateways.aiogram_gateway import AiogramGateway, TelegramGatewayRef
 from notifications.adapters.driving.telegram import handlers as notif_handlers
 from notifications.app.interfaces.i_config_repo import IConfigRepo
-from notifications.app.interfaces.i_telegram_gateway import ITelegramGateway
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +61,14 @@ class _PollingHandle:
 async def telegram_supervisor(container: AsyncContainer) -> None:
     current_token: Optional[str] = None
     handle: Optional[_PollingHandle] = None
+    gateway_ref: TelegramGatewayRef = await container.get(TelegramGatewayRef)
 
     async def stop_current() -> None:
         nonlocal handle
         if handle:
             await handle.stop()
             handle = None
+        gateway_ref.set(None)
 
     while True:
         try:
@@ -93,6 +94,8 @@ async def telegram_supervisor(container: AsyncContainer) -> None:
                     )
                     await bot.set_my_commands(BOT_COMMANDS)
                     logger.info("Bot commands registered")
+
+                    gateway_ref.set(AiogramGateway(bot))
 
                     from dishka.integrations.aiogram import setup_dishka as setup_aiogram_dishka
                     setup_aiogram_dishka(container=container, router=dp)

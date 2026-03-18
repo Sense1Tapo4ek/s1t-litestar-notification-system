@@ -1,14 +1,10 @@
 from dataclasses import dataclass
 from datetime import time
 from decimal import Decimal
-from enum import Enum
 
+from shared.generics import EventSeverity  # noqa: F401 -- re-exported for convenience
 
-class EventSeverity(str, Enum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-    CRITICAL = "critical"
+__all__ = ["EventSeverity", "TimeWindowVO", "SourceMetricsVO"]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
